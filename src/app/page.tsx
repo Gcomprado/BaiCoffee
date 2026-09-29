@@ -1,45 +1,29 @@
 "use client";
 
 import React, { useState } from "react";
-import { FLAVORS, Flavor, CartItem } from "@/data/sodaData";
-import { Navbar } from "@/components/Navbar";
-import { FizzCanvas } from "@/components/FizzCanvas";
-import { HeroSection } from "@/components/HeroSection";
-import { FlavorShowcase } from "@/components/FlavorShowcase";
-import { ComparisonSection } from "@/components/ComparisonSection";
-import { GutHealthScience } from "@/components/GutHealthScience";
-import { CustomPackBuilder } from "@/components/CustomPackBuilder";
-import { TestimonialsSection } from "@/components/TestimonialsSection";
-import { FAQSection } from "@/components/FAQSection";
+import { FLAVORS_DATA, ProductFlavor, CartItem } from "@/data/productData";
+import { Header } from "@/components/Header";
+import { Hero } from "@/components/Hero";
+import { FlavorDissection } from "@/components/FlavorDissection";
+import { BrewingProcess } from "@/components/BrewingProcess";
+import { TastingBoxBuilder } from "@/components/TastingBoxBuilder";
+import { TransparencyTable } from "@/components/TransparencyTable";
 import { Footer } from "@/components/Footer";
-import { CartDrawer } from "@/components/CartDrawer";
+import { OrderDrawer } from "@/components/OrderDrawer";
 
 export default function Home() {
-  const [selectedHeroFlavor, setSelectedHeroFlavor] = useState<Flavor>(FLAVORS[0]);
+  const [selectedHeroFlavor, setSelectedHeroFlavor] = useState<ProductFlavor>(FLAVORS_DATA[0]);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
+  const [isOrderDrawerOpen, setIsOrderDrawerOpen] = useState(false);
 
-  // Add standard pack to cart
-  const handleAddToCart = (
-    flavor: Flavor,
-    packSize: "4-pack" | "12-pack" | "24-pack"
-  ) => {
-    const price =
-      packSize === "4-pack"
-        ? flavor.prices.pack4
-        : packSize === "12-pack"
-        ? flavor.prices.pack12
-        : flavor.prices.pack24;
-
-    const itemId = `${flavor.id}-${packSize}`;
-
+  // Add individual flavor pack
+  const handleAddToCart = (flavor: ProductFlavor, size: "12-pack") => {
+    const itemId = `${flavor.id}-${size}`;
     setCartItems((prev) => {
-      const existing = prev.find((item) => item.id === itemId);
+      const existing = prev.find((it) => it.id === itemId);
       if (existing) {
-        return prev.map((item) =>
-          item.id === itemId
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
+        return prev.map((it) =>
+          it.id === itemId ? { ...it, quantity: it.quantity + 1 } : it
         );
       }
       return [
@@ -47,32 +31,49 @@ export default function Home() {
         {
           id: itemId,
           flavorId: flavor.id,
-          flavorName: flavor.name,
-          packSize: packSize,
+          name: flavor.name,
+          size: size,
+          price: flavor.price12Pack,
           quantity: 1,
-          price: price,
-          color: flavor.primaryColor,
         },
       ];
     });
-
-    setIsCartOpen(true);
+    setIsOrderDrawerOpen(true);
   };
 
-  // Add custom crate to cart
-  const handleAddCustomCrate = (customItem: CartItem) => {
-    setCartItems((prev) => [...prev, customItem]);
-    setIsCartOpen(true);
+  // Add Tasting Box
+  const handleAddTastingBox = () => {
+    const itemId = `tasting-box-season-3`;
+    setCartItems((prev) => {
+      const existing = prev.find((it) => it.id === itemId);
+      if (existing) {
+        return prev.map((it) =>
+          it.id === itemId ? { ...it, quantity: it.quantity + 1 } : it
+        );
+      }
+      return [
+        ...prev,
+        {
+          id: itemId,
+          flavorId: "tasting-box",
+          name: "Season Three Tasting Box",
+          size: "tasting-set",
+          price: 42,
+          quantity: 1,
+        },
+      ];
+    });
+    setIsOrderDrawerOpen(true);
   };
 
-  // Update quantity in cart
+  // Update item quantity
   const handleUpdateQuantity = (id: string, delta: number) => {
     setCartItems((prev) =>
       prev
         .map((item) => {
           if (item.id === id) {
-            const newQty = item.quantity + delta;
-            return newQty > 0 ? { ...item, quantity: newQty } : null;
+            const nextQty = item.quantity + delta;
+            return nextQty > 0 ? { ...item, quantity: nextQty } : null;
           }
           return item;
         })
@@ -80,60 +81,56 @@ export default function Home() {
     );
   };
 
-  // Remove single item
+  // Remove item
   const handleRemoveItem = (id: string) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== id));
+    setCartItems((prev) => prev.filter((it) => it.id !== id));
   };
 
-  // Clear entire cart
+  // Clear cart
   const handleClearCart = () => {
     setCartItems([]);
   };
 
-  const totalCartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const totalCartCount = cartItems.reduce((acc, it) => acc + it.quantity, 0);
 
   return (
-    <div className="min-h-screen bg-[#07090e] text-zinc-100 selection:bg-amber-500 selection:text-black relative">
-      {/* Interactive Background Fizz Particles */}
-      <FizzCanvas glowColor={selectedHeroFlavor.primaryColor} />
-
-      {/* Navigation Header */}
-      <Navbar
+    <div className="min-h-screen flex flex-col justify-between">
+      {/* Header */}
+      <Header
         cartCount={totalCartCount}
-        onOpenCart={() => setIsCartOpen(true)}
+        onOpenCart={() => setIsOrderDrawerOpen(true)}
       />
 
-      {/* Main Sections */}
-      <main className="relative z-10">
-        <HeroSection
+      {/* Main Content */}
+      <main>
+        <Hero
           selectedFlavor={selectedHeroFlavor}
           onSelectFlavor={setSelectedHeroFlavor}
-          onAddToCart={(flavor, pack) => handleAddToCart(flavor, pack)}
-        />
-
-        <FlavorShowcase
           onAddToCart={handleAddToCart}
-          onSelectFlavorForHero={(flavor) => setSelectedHeroFlavor(flavor)}
         />
 
-        <ComparisonSection />
+        <FlavorDissection
+          onAddToCart={handleAddToCart}
+          onSelectHeroFlavor={(f) => {
+            setSelectedHeroFlavor(f);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+        />
 
-        <GutHealthScience />
+        <BrewingProcess />
 
-        <CustomPackBuilder onAddCustomCrate={handleAddCustomCrate} />
+        <TastingBoxBuilder onAddTastingBox={handleAddTastingBox} />
 
-        <TestimonialsSection />
-
-        <FAQSection />
+        <TransparencyTable />
       </main>
 
       {/* Footer */}
       <Footer />
 
-      {/* Slide-out Cart Drawer */}
-      <CartDrawer
-        isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
+      {/* Order Drawer */}
+      <OrderDrawer
+        isOpen={isOrderDrawerOpen}
+        onClose={() => setIsOrderDrawerOpen(false)}
         items={cartItems}
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={handleRemoveItem}
