@@ -1,69 +1,144 @@
-import Image from "next/image";
+"use client";
+
+import React, { useState } from "react";
+import { FLAVORS, Flavor, CartItem } from "@/data/sodaData";
+import { Navbar } from "@/components/Navbar";
+import { FizzCanvas } from "@/components/FizzCanvas";
+import { HeroSection } from "@/components/HeroSection";
+import { FlavorShowcase } from "@/components/FlavorShowcase";
+import { ComparisonSection } from "@/components/ComparisonSection";
+import { GutHealthScience } from "@/components/GutHealthScience";
+import { CustomPackBuilder } from "@/components/CustomPackBuilder";
+import { TestimonialsSection } from "@/components/TestimonialsSection";
+import { FAQSection } from "@/components/FAQSection";
+import { Footer } from "@/components/Footer";
+import { CartDrawer } from "@/components/CartDrawer";
 
 export default function Home() {
+  const [selectedHeroFlavor, setSelectedHeroFlavor] = useState<Flavor>(FLAVORS[0]);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
+
+  // Add standard pack to cart
+  const handleAddToCart = (
+    flavor: Flavor,
+    packSize: "4-pack" | "12-pack" | "24-pack"
+  ) => {
+    const price =
+      packSize === "4-pack"
+        ? flavor.prices.pack4
+        : packSize === "12-pack"
+        ? flavor.prices.pack12
+        : flavor.prices.pack24;
+
+    const itemId = `${flavor.id}-${packSize}`;
+
+    setCartItems((prev) => {
+      const existing = prev.find((item) => item.id === itemId);
+      if (existing) {
+        return prev.map((item) =>
+          item.id === itemId
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      }
+      return [
+        ...prev,
+        {
+          id: itemId,
+          flavorId: flavor.id,
+          flavorName: flavor.name,
+          packSize: packSize,
+          quantity: 1,
+          price: price,
+          color: flavor.primaryColor,
+        },
+      ];
+    });
+
+    setIsCartOpen(true);
+  };
+
+  // Add custom crate to cart
+  const handleAddCustomCrate = (customItem: CartItem) => {
+    setCartItems((prev) => [...prev, customItem]);
+    setIsCartOpen(true);
+  };
+
+  // Update quantity in cart
+  const handleUpdateQuantity = (id: string, delta: number) => {
+    setCartItems((prev) =>
+      prev
+        .map((item) => {
+          if (item.id === id) {
+            const newQty = item.quantity + delta;
+            return newQty > 0 ? { ...item, quantity: newQty } : null;
+          }
+          return item;
+        })
+        .filter(Boolean) as CartItem[]
+    );
+  };
+
+  // Remove single item
+  const handleRemoveItem = (id: string) => {
+    setCartItems((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  // Clear entire cart
+  const handleClearCart = () => {
+    setCartItems([]);
+  };
+
+  const totalCartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="min-h-screen bg-[#07090e] text-zinc-100 selection:bg-amber-500 selection:text-black relative">
+      {/* Interactive Background Fizz Particles */}
+      <FizzCanvas glowColor={selectedHeroFlavor.primaryColor} />
+
+      {/* Navigation Header */}
+      <Navbar
+        cartCount={totalCartCount}
+        onOpenCart={() => setIsCartOpen(true)}
+      />
+
+      {/* Main Sections */}
+      <main className="relative z-10">
+        <HeroSection
+          selectedFlavor={selectedHeroFlavor}
+          onSelectFlavor={setSelectedHeroFlavor}
+          onAddToCart={(flavor, pack) => handleAddToCart(flavor, pack)}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+
+        <FlavorShowcase
+          onAddToCart={handleAddToCart}
+          onSelectFlavorForHero={(flavor) => setSelectedHeroFlavor(flavor)}
+        />
+
+        <ComparisonSection />
+
+        <GutHealthScience />
+
+        <CustomPackBuilder onAddCustomCrate={handleAddCustomCrate} />
+
+        <TestimonialsSection />
+
+        <FAQSection />
       </main>
+
+      {/* Footer */}
+      <Footer />
+
+      {/* Slide-out Cart Drawer */}
+      <CartDrawer
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        items={cartItems}
+        onUpdateQuantity={handleUpdateQuantity}
+        onRemoveItem={handleRemoveItem}
+        onClearCart={handleClearCart}
+      />
     </div>
   );
 }
